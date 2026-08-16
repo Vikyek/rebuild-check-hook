@@ -1,0 +1,10 @@
+[Trigger]
+Operation = Upgrade
+Type = Package
+Target = *
+
+[Action]
+Description = Checking for packages needing rebuilds...
+When = PostTransaction
+Exec = /usr/bin/rebuild-check
+NeedsTargets

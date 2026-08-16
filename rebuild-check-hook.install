@@ -1,0 +1,15 @@
+post_install() {
+    echo "Masking default anneal and rebuild-detector hooks..."
+    ln -sf /dev/null /etc/pacman.d/hooks/anneal-trigger.hook
+    ln -sf /dev/null /etc/pacman.d/hooks/rebuild-detector.hook
+}
+
+post_upgrade() {
+    post_install
+}
+
+post_remove() {
+    echo "Restoring default hooks..."
+    [ -L /etc/pacman.d/hooks/anneal-trigger.hook ] && rm -f /etc/pacman.d/hooks/anneal-trigger.hook
+    [ -L /etc/pacman.d/hooks/rebuild-detector.hook ] && rm -f /etc/pacman.d/hooks/rebuild-detector.hook
+}
