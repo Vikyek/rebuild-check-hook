@@ -3,6 +3,7 @@ pkgver=1.0.0
 pkgrel=1
 pkgdesc="Pacman hook to consolidate anneal and rebuild-detector outputs and trigger rebuilds"
 arch=('any')
+url="https://github.com/Vikyek/rebuild-check-hook"
 license=('GPL')
 depends=('anneal' 'rebuild-detector' 'bash')
 install=rebuild-check-hook.install
