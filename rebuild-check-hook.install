@@ -2,6 +2,11 @@ post_install() {
     echo "Masking default anneal and rebuild-detector hooks..."
     ln -sf /dev/null /etc/pacman.d/hooks/anneal-trigger.hook
     ln -sf /dev/null /etc/pacman.d/hooks/rebuild-detector.hook
+
+    echo "Creating paru-wrapper symlink at /home/v/.local/bin/paru..."
+    mkdir -p /home/v/.local/bin
+    ln -sf /usr/bin/paru-wrapper /home/v/.local/bin/paru
+    chown v:v /home/v/.local/bin/paru 2>/dev/null || true
 }
 
 post_upgrade() {
@@ -12,4 +17,7 @@ post_remove() {
     echo "Restoring default hooks..."
     [ -L /etc/pacman.d/hooks/anneal-trigger.hook ] && rm -f /etc/pacman.d/hooks/anneal-trigger.hook
     [ -L /etc/pacman.d/hooks/rebuild-detector.hook ] && rm -f /etc/pacman.d/hooks/rebuild-detector.hook
+
+    echo "Removing paru-wrapper symlink..."
+    [ -L /home/v/.local/bin/paru ] && rm -f /home/v/.local/bin/paru
 }
