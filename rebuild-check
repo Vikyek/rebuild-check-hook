@@ -14,7 +14,10 @@ if [[ -n "$targets" ]]; then
     rebuild_output=$(echo "$targets" | /usr/bin/checkrebuild 2>/dev/null)
 fi
 
-# 3. Check if there are packages that need rebuilding (either queued in anneal or detected by checkrebuild)
+# 3. Check for orphans
+orphans=$(pacman -Qtdq)
+
+# 4. Check if there are packages that need rebuilding (either queued in anneal or detected by checkrebuild)
 if anneal list 2>/dev/null | grep -q "package(s) in queue"; then
     queue_summary=$(anneal list 2>/dev/null | tail -n 1)
     num_packages=$(echo "$queue_summary" | grep -oP '\d+' || echo "0")
@@ -22,7 +25,10 @@ else
     num_packages=0
 fi
 
-if [[ "$num_packages" -gt 0 ]] || [[ -n "$rebuild_output" ]]; then
+if [[ -n "$orphans" ]] || [[ "$num_packages" -gt 0 ]] || [[ -n "$rebuild_output" ]]; then
+    if [[ -n "$orphans" ]]; then
+        echo "[rebuild-check] Found orphaned packages that can be cleaned."
+    fi
     if [[ "$num_packages" -gt 0 ]]; then
         echo "[rebuild-check] Found $num_packages AUR packages queued for rebuild by anneal."
     fi
@@ -31,7 +37,7 @@ if [[ "$num_packages" -gt 0 ]] || [[ -n "$rebuild_output" ]]; then
         echo "$rebuild_output"
     fi
 
-    # Start the rebuild in the background after the current pacman process exits and releases the lock
+    # Start the tasks in the background after the current pacman process exits and releases the lock
     (
         # Wait for pacman to release the database lock
         while [ -f /var/lib/pacman/db.lck ]; do
@@ -39,8 +45,27 @@ if [[ "$num_packages" -gt 0 ]] || [[ -n "$rebuild_output" ]]; then
         done
         # Short sleep to let the user's shell prompt restore
         sleep 0.5
-        echo -e "\n[rebuild-check] Launching 'anneal rebuild --checkrebuild'..."
-        anneal rebuild --checkrebuild
-    ) & disown
+
+        # Determine target output terminal safely
+        if [[ -c /dev/tty ]] && [[ -w /dev/tty ]]; then
+            out="/dev/tty"
+        else
+            out="/dev/null"
+        fi
+
+        # 1. Clean orphans
+        orphans_now=$(pacman -Qtdq)
+        if [[ -n "$orphans_now" ]]; then
+            echo -e "\n[rebuild-check] Cleaning up orphaned packages..." > "$out"
+            pacman -Rns --noconfirm $orphans_now > "$out" 2>&1
+        fi
+
+        # 2. Launch rebuilds
+        if [[ "$num_packages" -gt 0 ]] || [[ -n "$rebuild_output" ]]; then
+            echo -e "\n[rebuild-check] Launching 'anneal rebuild --checkrebuild'..." > "$out"
+            anneal rebuild --checkrebuild > "$out" 2>&1
+        fi
+    ) >/dev/null 2>&1 < /dev/null & disown
 fi
+
 

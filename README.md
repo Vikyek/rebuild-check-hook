@@ -7,6 +7,7 @@ An Arch Linux pacman post-transaction hook that consolidates `anneal` and `rebui
 - **Consolidated Output:** Replaces multiple verbose outputs with a single post-transaction check phase.
 - **Proactive & Reactive Checks:** Integrates both `anneal` (proactive library tracking) and `checkrebuild` (reactive filesystem auditing).
 - **Automated Rebuilding:** Automatically triggers `anneal rebuild --checkrebuild` in a background job once the pacman transaction lock is released, if any packages needing a rebuild are found.
+- **Automated Orphan Cleaning:** Automatically detects and removes orphaned packages using `pacman -Rns --noconfirm` once the lock is released.
 - **Clean Masking:** Automatically masks the default system hooks (`anneal-trigger.hook` and `rebuild-detector.hook`) on install, and restores them on package removal.
 
 ## Installation

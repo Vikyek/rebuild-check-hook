@@ -11,7 +11,7 @@ source=(
     "rebuild-check"
     "rebuild-check.hook"
 )
-sha256sums=('2ba1483f6e784c1e735956e3bd6af49aeebbf79bd794977b61ee4cb5f7d04cd2'
+sha256sums=('67a9361bbeebc33cab0643c78ea8b1f34ebc6befecb3364bbf9dd9ad766d65f5'
             'd3e3cef223f8f056aa13d24c77b509111e036f1da57af1ac107583b4c5639da4')
 
 package() {
