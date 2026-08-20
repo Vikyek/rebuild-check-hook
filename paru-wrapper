@@ -58,4 +58,32 @@ if [ "$is_transaction" = true ]; then
 fi
 
 # 6. Execute the real paru command
-exec /usr/bin/paru "$@"
+start_marker="/tmp/paru_start_time.$$"
+touch "$start_marker"
+
+/usr/bin/paru "$@"
+exit_code=$?
+
+if [ $exit_code -eq 0 ] && [ "$is_transaction" = true ]; then
+    # Find all packages built during this paru run.
+    # Since PKGDEST is configured to /mnt/v/Data/makepkg/packages,
+    # any package built by makepkg under paru will be saved there.
+    mapfile -t new_pkgs < <(find /mnt/v/Data/makepkg/packages -name "*.pkg.tar.zst" -newer "$start_marker" 2>/dev/null)
+    
+    if [ ${#new_pkgs[@]} -gt 0 ]; then
+        echo -e "\n[paru-wrapper] Detected ${#new_pkgs[@]} newly built package(s):" >&2
+        for pkg in "${new_pkgs[@]}"; do
+            echo "  -> $(basename "$pkg")" >&2
+        done
+        
+        echo "[paru-wrapper] Automatically updating MKVPKG repository database..." >&2
+        # repo-add options:
+        # -R: removes old package files from disk after updating database
+        # -w: wait for lock file
+        repo-add -R -w /mnt/v/Data/makepkg/packages/MKVPKG.db.tar.gz "${new_pkgs[@]}"
+        echo "[paru-wrapper] MKVPKG repository database updated successfully." >&2
+    fi
+fi
+
+rm -f "$start_marker"
+exit $exit_code
