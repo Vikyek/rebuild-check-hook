@@ -62,8 +62,8 @@ if [[ -n "$orphans" ]] || [[ "$num_packages" -gt 0 ]] || [[ -n "$rebuild_output"
 
         # 2. Launch rebuilds
         if [[ "$num_packages" -gt 0 ]] || [[ -n "$rebuild_output" ]]; then
-            echo -e "\n[rebuild-check] Launching 'anneal rebuild --force --checkrebuild'..." > "$out"
-            anneal rebuild --force --checkrebuild > "$out" 2>&1
+            echo -e "\n[rebuild-check] Launching 'anneal rebuild --force --checkrebuild -- --noconfirm'..." > "$out"
+            anneal rebuild --force --checkrebuild -- --noconfirm > "$out" 2>&1
         fi
     ) >/dev/null 2>&1 < /dev/null & disown
 fi
