@@ -1,6 +1,6 @@
 pkgname=rebuild-check-hook
 pkgver=1.0.0
-pkgrel=3
+pkgrel=4
 pkgdesc="Pacman hook to consolidate anneal and rebuild-detector outputs and trigger rebuilds"
 arch=('any')
 url="https://github.com/Vikyek/rebuild-check-hook"
@@ -11,7 +11,7 @@ source=(
     "rebuild-check"
     "rebuild-check.hook"
 )
-sha256sums=('67a9361bbeebc33cab0643c78ea8b1f34ebc6befecb3364bbf9dd9ad766d65f5'
+sha256sums=('d9c924187e57452b1f99e7bcbb92a4cb244ba500928b79a110b979ba6e925547'
             'd3e3cef223f8f056aa13d24c77b509111e036f1da57af1ac107583b4c5639da4')
 
 package() {
