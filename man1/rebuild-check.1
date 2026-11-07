@@ -1,0 +1,18 @@
+.TH REBUILD-CHECK 1 "November 2026" "rebuild-check-hook 1.0.0" "User Commands"
+.SH NAME
+rebuild-check \- Consolidates rebuild-detector and anneal hooks to trigger package rebuilds
+.SH SYNOPSIS
+.B rebuild-check
+[\fIPACKAGES\fR...]
+.SH DESCRIPTION
+.B rebuild-check
+is an automated utility and libalpm post-transaction hook for Arch Linux.
+It inspects updated shared libraries and binaries, queries \fBrebuild-detector\fR and \fBanneal\fR, and marks or rebuilds dependent AUR/custom packages against newly installed libraries.
+.SH OPTIONS
+Accepts package names via standard input or arguments when invoked during pacman/paru post-transaction processing.
+.SH SEE ALSO
+.BR checkrebuild (1),
+.BR paru (8),
+.BR pacman (8)
+.SH AUTHORS
+Maintained by Vikyek <https://github.com/Vikyek/rebuild-check-hook>.
