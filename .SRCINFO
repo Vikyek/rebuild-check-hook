@@ -1,7 +1,7 @@
 pkgbase = rebuild-check-hook
 	pkgdesc = Pacman hook to consolidate anneal and rebuild-detector outputs and trigger rebuilds
 	pkgver = 1.0.0
-	pkgrel = 5
+	pkgrel = 6
 	url = https://github.com/Vikyek/rebuild-check-hook
 	install = rebuild-check-hook.install
 	arch = any

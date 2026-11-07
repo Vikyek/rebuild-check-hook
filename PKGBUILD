@@ -1,6 +1,6 @@
 pkgname=rebuild-check-hook
 pkgver=1.0.0
-pkgrel=5
+pkgrel=6
 pkgdesc="Pacman hook to consolidate anneal and rebuild-detector outputs and trigger rebuilds"
 arch=('any')
 url="https://github.com/Vikyek/rebuild-check-hook"
