@@ -17,7 +17,7 @@ sha256sums=('f56c8656305ab92d8f0aba363106ebccd61e0214557dc120510bb395b2a6b28f'
 package() {
     # Install update script
     install -Dm755 "${srcdir}/rebuild-check" "${pkgdir}/usr/bin/rebuild-check"
-    install -Dm644 man1/rebuild-check.1 "${pkgdir}/usr/share/man/man1/rebuild-check.1"
+    install -Dm644 "$startdir/man1/rebuild-check.1" "${pkgdir}/usr/share/man/man1/rebuild-check.1"
 
     # Install pacman hook
     install -Dm644 "${srcdir}/rebuild-check.hook" "${pkgdir}/usr/share/libalpm/hooks/rebuild-check.hook"
