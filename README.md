@@ -32,6 +32,7 @@ paru -S anneal rebuild-detector
 - **Consolidated Output:** Replaces multiple verbose outputs with a single post-transaction check phase.
 - **Proactive & Reactive Checks:** Integrates both `anneal` (proactive library tracking) and `checkrebuild` (reactive filesystem auditing).
 - **Automated Rebuilding:** Automatically triggers `anneal rebuild --checkrebuild` in a background job once the pacman transaction lock is released, if any packages needing a rebuild are found.
+- **Robust Execution Logging:** Background rebuild and cleanup execution logs and errors are written to `/var/log/rebuild-check.log` (or `/tmp/rebuild-check.log`), while also mirroring to the active terminal (`/dev/tty`) when available.
 - **Automated Orphan Cleaning:** Automatically detects and removes orphaned packages using `pacman -Rns --noconfirm` once the lock is released.
 - **Clean Masking:** Automatically masks the default system hooks (`anneal-trigger.hook` and `rebuild-detector.hook`) on install, and restores them on package removal.
 

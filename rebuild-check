@@ -1,28 +1,46 @@
 #!/bin/bash
 
-# Read the list of target packages from stdin (provided by pacman hook)
-targets=$(cat)
+# Read the list of target packages from stdin if available (provided by pacman hook or caller)
+targets=""
+if [[ ! -t 0 ]]; then
+    targets=$(cat)
+fi
 
 # 1. Trigger anneal (proactive rebuild detection)
-if [[ -n "$targets" ]]; then
-    echo "$targets" | /usr/bin/anneal trigger >/dev/null 2>&1
+if [[ -n "$targets" ]] && command -v anneal >/dev/null 2>&1; then
+    echo "$targets" | /usr/bin/anneal trigger >/dev/null 2>&1 || true
 fi
 
 # 2. Run checkrebuild (reactive check for broken shared libraries)
+# Include non-official custom repositories (e.g. MKVPKG)
+include_args=()
+if command -v pacconf >/dev/null 2>&1; then
+    for repo in $(pacconf --repo-list 2>/dev/null); do
+        case "$repo" in
+            core|extra|multilib|*-testing) ;;
+            *) include_args+=(-i "$repo") ;;
+        esac
+    done
+fi
+
 rebuild_output=""
-if [[ -n "$targets" ]]; then
-    rebuild_output=$(echo "$targets" | /usr/bin/checkrebuild 2>/dev/null)
+if [[ -x /usr/bin/checkrebuild ]]; then
+    # Run with </dev/null to check all installed packages instead of piping $targets,
+    # which restricts checkrebuild to depth-1 reverse dependencies (pactree -rud1)
+    # and misses transitive ABI breaks (depth-2+).
+    rebuild_output=$(/usr/bin/checkrebuild "${include_args[@]}" </dev/null 2>/dev/null || true)
 fi
 
 # 3. Check for orphans
-orphans=$(pacman -Qtdq)
+orphans=$(pacman -Qtdq 2>/dev/null || true)
 
 # 4. Check if there are packages that need rebuilding (either queued in anneal or detected by checkrebuild)
-if anneal list 2>/dev/null | grep -q "package(s) in queue"; then
-    queue_summary=$(anneal list 2>/dev/null | tail -n 1)
-    num_packages=$(echo "$queue_summary" | grep -oP '\d+' || echo "0")
-else
-    num_packages=0
+num_packages=0
+if command -v anneal >/dev/null 2>&1; then
+    if anneal list 2>/dev/null | grep -q "package(s) in queue"; then
+        queue_summary=$(anneal list 2>/dev/null | tail -n 1)
+        num_packages=$(echo "$queue_summary" | grep -oP '\d+' || echo "0")
+    fi
 fi
 
 if [[ -n "$orphans" ]] || [[ "$num_packages" -gt 0 ]] || [[ -n "$rebuild_output" ]]; then
@@ -39,6 +57,22 @@ if [[ -n "$orphans" ]] || [[ "$num_packages" -gt 0 ]] || [[ -n "$rebuild_output"
 
     # Start the tasks in the background after the current pacman process exits and releases the lock
     (
+        trap '' HUP INT
+
+        log_file="/var/log/rebuild-check.log"
+        if ! touch "$log_file" 2>/dev/null; then
+            log_file="/tmp/rebuild-check.log"
+        fi
+
+        # Log background execution output/errors to log file, and mirror to /dev/tty if available
+        if [[ -c /dev/tty ]] && [[ -w /dev/tty ]]; then
+            exec > >(tee -a "$log_file" > /dev/tty 2>/dev/null) 2>&1 || exec >> "$log_file" 2>&1
+        else
+            exec >> "$log_file" 2>&1
+        fi
+
+        echo "=== [$(date '+%Y-%m-%d %H:%M:%S')] rebuild-check background task started ==="
+
         # Wait for pacman to release the database lock
         while [ -f /var/lib/pacman/db.lck ]; do
             sleep 0.2
@@ -46,26 +80,19 @@ if [[ -n "$orphans" ]] || [[ "$num_packages" -gt 0 ]] || [[ -n "$rebuild_output"
         # Short sleep to let the user's shell prompt restore
         sleep 0.5
 
-        # Determine target output terminal safely
-        if [[ -c /dev/tty ]] && [[ -w /dev/tty ]]; then
-            out="/dev/tty"
-        else
-            out="/dev/null"
-        fi
-
         # 1. Clean orphans
-        orphans_now=$(pacman -Qtdq)
+        orphans_now=$(pacman -Qtdq 2>/dev/null || true)
         if [[ -n "$orphans_now" ]]; then
-            echo -e "\n[rebuild-check] Cleaning up orphaned packages..." > "$out"
-            pacman -Rns --noconfirm $orphans_now > "$out" 2>&1
+            echo -e "\n[rebuild-check] Cleaning up orphaned packages..."
+            pacman -Rns --noconfirm $orphans_now
         fi
 
         # 2. Launch rebuilds
         if [[ "$num_packages" -gt 0 ]] || [[ -n "$rebuild_output" ]]; then
-            echo -e "\n[rebuild-check] Launching 'anneal rebuild --force --checkrebuild -- --noconfirm'..." > "$out"
-            anneal rebuild --force --checkrebuild -- --noconfirm > "$out" 2>&1
+            echo -e "\n[rebuild-check] Launching 'anneal rebuild --force --checkrebuild -- --noconfirm'..."
+            anneal rebuild --force --checkrebuild -- --noconfirm
         fi
-    ) >/dev/null 2>&1 < /dev/null & disown
+
+        echo "=== [$(date '+%Y-%m-%d %H:%M:%S')] rebuild-check background task completed ==="
+    ) < /dev/null & disown
 fi
-
-
